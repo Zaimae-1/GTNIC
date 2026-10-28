@@ -6,3 +6,5 @@ out/
 !.env.example
 !.env.test.example
 *.log
+.playwright-cli/
+output/playwright/

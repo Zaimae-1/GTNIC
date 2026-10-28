@@ -1,6 +1,6 @@
 # DapurCerdas
 
-Fondasi aplikasi Smart POS berbasis Next.js untuk UMKM kuliner. Saat ini hanya ada halaman awal sementara dan modul koneksi Supabase. Fitur bisnis dan autentikasi belum diimplementasikan.
+Fondasi aplikasi Smart POS berbasis Next.js untuk UMKM kuliner. Halaman utama, dashboard contoh, dan kerangka halaman kerja sudah tersedia. Data pada dashboard adalah contoh; fitur bisnis dan autentikasi belum terhubung.
 
 ## Menjalankan lokal
 
@@ -16,7 +16,8 @@ Jalankan `npm run lint`, `npm run typecheck`, dan `npm run build` sebelum mengga
 
 ## Struktur
 
-- `src/app`: halaman dan tampilan dasar Next.js.
+- `src/app`: halaman utama dan halaman aplikasi (`dashboard`, `pos`, `products`, `inventory`, `waste`, `sales`, `settings`, `profile`).
+- `src/components`: kerangka navigasi dan bagian halaman bersama.
 - `src/lib/supabase`: klien browser/server bersama. Modul autentikasi tim memakai modul ini.
 - `docs/database-plan.md`: rancangan skema untuk tahap fitur.
 - `docs/auth-integration.md`: kontrak penggabungan pekerjaan autentikasi.

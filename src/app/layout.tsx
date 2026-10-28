@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "DapurCerdas",
-  description: "Fondasi Smart POS untuk UMKM kuliner",
+  description: "Smart POS yang sederhana untuk UMKM kuliner",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
