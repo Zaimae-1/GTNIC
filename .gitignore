@@ -8,3 +8,4 @@ out/
 *.log
 .playwright-cli/
 output/playwright/
+next-env.d.ts
