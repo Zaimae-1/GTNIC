@@ -1,25 +1,42 @@
-# DapurCerdas
+# Saji Rasa
 
-Fondasi aplikasi Smart POS berbasis Next.js untuk UMKM kuliner. Halaman utama, dashboard contoh, dan kerangka halaman kerja sudah tersedia. Data pada dashboard adalah contoh; fitur bisnis dan autentikasi belum terhubung.
+Prototipe website restoran Nusantara. Dibangun ulang dari fondasi DapurCerdas di branch zaim, dengan alur pelanggan mengacu pada situs Restoran Rahmawati dan identitas visual baru.
 
-## Menjalankan lokal
+## Jalankan
 
-1. Gunakan Node.js yang memenuhi persyaratan versi Next.js di `package.json` dan npm.
-2. Jalankan `npm ci` dari folder ini.
-3. Jalankan `npm run dev` lalu buka `http://localhost:3000`.
+Gunakan Node.js yang kompatibel dengan Next.js 16, lalu:
 
-Halaman awal dapat dibuka tanpa konfigurasi Supabase. Saat proyek Supabase tim tersedia, salin `.env.example` menjadi `.env.local` dan isi URL serta publishable key dari proyek tersebut. Jangan memasukkan secret key atau service-role key ke variabel `NEXT_PUBLIC_` atau Git. Restart server setelah mengubah `.env.local`.
+1. Jalankan npm ci.
+2. Jalankan npm run dev.
+3. Buka http://localhost:3000.
 
-## Pemeriksaan
+Pemeriksaan: npm run lint, npm run typecheck, dan npm run build. Untuk menjalankan build produksi: npm run start setelah build berhasil.
 
-Jalankan `npm run lint`, `npm run typecheck`, dan `npm run build` sebelum menggabungkan perubahan.
+Tidak ada variabel lingkungan yang diperlukan untuk mencoba prototipe. Modul Supabase lama tetap tersedia di src/lib/supabase sebagai titik integrasi berikutnya, tetapi belum digunakan oleh aplikasi restoran.
 
-## Struktur
+## Halaman dan fungsi
 
-- `src/app`: halaman utama dan halaman aplikasi (`dashboard`, `pos`, `products`, `inventory`, `waste`, `sales`, `settings`, `profile`).
-- `src/components`: kerangka navigasi dan bagian halaman bersama.
-- `src/lib/supabase`: klien browser/server bersama. Modul autentikasi tim memakai modul ini.
-- `docs/database-plan.md`: rancangan skema untuk tahap fitur.
-- `docs/auth-integration.md`: kontrak penggabungan pekerjaan autentikasi.
+- /: beranda, pilihan menu, cerita, area makan, dan informasi lokasi.
+- /menu: 16 menu contoh, pencarian, kategori, favorit, pengurutan harga, pilihan nomor meja.
+- /menu/[id]: varian, pedas/manis, tambahan, catatan, jumlah porsi, favorit, penambahan ke keranjang.
+- /cart: ubah jumlah, hapus item, makan di tempat/bawa pulang, data pemesan, pilihan metode pembayaran, pesanan simulasi.
+- /pesanan/[id]: rincian, status, salin nomor, cetak rincian.
+- /reservasi: data pengunjung, jadwal, area, denah meja ilustrasi, tinjau dan simpan pengajuan.
+- /akun: pesanan dan reservasi perangkat ini; batalkan pengajuan yang belum dikonfirmasi.
+- /login: rancangan masuk WhatsApp; pengiriman OTP belum aktif. /register diarahkan ke halaman ini.
+- /admin: **panel demo lokal terbuka**, ringkasan, pengelolaan status pesanan/reservasi, ketersediaan menu, meja, laporan dan pengaturan kontak restoran.
+- Bantuan percakapan menggunakan jawaban berbasis topik lokal, bukan model AI atau chat staf.
 
-Tahap berikutnya mencakup proyek Supabase, migrasi dan RLS, autentikasi, produk, resep, stok, POS, serta dashboard. Rancangan di `docs` belum diterapkan ke database.
+## Batas prototipe
+
+Data disimpan di localStorage dengan key sajirasa-demo-v1. Data tidak tersinkron antarperangkat dan dapat hilang jika penyimpanan browser dibersihkan. Panel staf melihat data yang dibuat pada browser/origin yang sama. Ini bukan autentikasi atau penyimpanan server.
+
+Pembayaran tidak diproses; metode hanya dicatat. Pesanan tidak dikirim ke dapur nyata dan pengajuan reservasi tidak menjamin meja nyata. Menu, harga, jam buka, area, dan alamat adalah data contoh. Kontak WhatsApp kosong secara default; dapat diisi melalui pengaturan demo, lalu tautan WhatsApp dan pencarian alamat pada footer menjadi tersedia.
+
+Untuk mencoba: pilih menu → atur varian → tambah ke keranjang → lengkapi checkout → buka /admin dan ubah status → periksa /akun. Reservasi dapat ditinjau dan dikonfirmasi melalui panel yang sama. Tidak ada data yang dikirim ke situs referensi.
+
+## Integrasi berikutnya
+
+Lihat docs/integrations.md. Jangan gunakan panel demo terbuka untuk data pelanggan nyata. Terapkan autentikasi staf, otorisasi server, database, dan validasi harga/ketersediaan pada server sebelum penggunaan operasional.
+
+Versi DapurCerdas terdahulu ada pada tag lokal backup/dapurcerdas-20261104 dan riwayat Git.
