@@ -25,7 +25,7 @@ Tidak ada variabel lingkungan yang diperlukan untuk mencoba prototipe. Modul Sup
 - /akun: pesanan dan reservasi perangkat ini; batalkan pengajuan yang belum dikonfirmasi.
 - /login: rancangan masuk WhatsApp; pengiriman OTP belum aktif. /register diarahkan ke halaman ini.
 - /admin: **panel demo lokal terbuka**, ringkasan, pengelolaan status pesanan/reservasi, ketersediaan menu, meja, laporan dan pengaturan kontak restoran.
-- Bantuan percakapan menggunakan jawaban berbasis topik lokal, bukan model AI atau chat staf.
+- Bantuan percakapan memakai bahasa santai, konteks pertanyaan lanjutan, pilihan berdasarkan harga, dan tautan menu. Jawaban diproses lokal berdasarkan data contoh; belum memakai model AI atau chat staf.
 
 ## Batas prototipe
 

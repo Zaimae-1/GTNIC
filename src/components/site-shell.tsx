@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { Brand, Icon } from "./ui";
 import { useRestaurant } from "@/lib/restaurant-store";
-import { dishes } from "@/lib/restaurant";
+import { restaurantReply, type ChatReply } from "@/lib/chat-replies";
 import { MotionEffects } from "./motion-effects";
 
 const links = [
@@ -92,27 +92,27 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </div>
-        {open && (
-          <nav
-            id="mobile-menu"
-            className="mobile-menu"
-            aria-label="Navigasi ponsel"
-          >
-            {[
-              ...links,
-              { href: "/cart", label: "Keranjang" },
-              { href: "/akun", label: "Akun & pesanan" },
-            ].map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-        )}
+        <nav
+          id="mobile-menu"
+          className={"mobile-menu" + (open ? " is-open" : "")}
+          aria-hidden={!open}
+          inert={!open}
+          aria-label="Navigasi ponsel"
+        >
+          {[
+            ...links,
+            { href: "/cart", label: "Keranjang" },
+            { href: "/akun", label: "Akun & pesanan" },
+          ].map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
       </header>
       <main id="main" tabIndex={-1}>
         {children}
@@ -196,118 +196,143 @@ function RestaurantChat() {
   const state = useRestaurant();
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<{ role: string; text: string }[]>(
+  const [messages, setMessages] = useState<(ChatReply & { role: string })[]>(
     [],
   );
-  const end = useRef<HTMLDivElement>(null);
+  const body = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLElement>(null);
+  const launcher = useRef<HTMLButtonElement>(null);
+  function close() {
+    setOpen(false);
+    launcher.current?.focus({ preventScroll: true });
+  }
   useEffect(() => {
-    if (open) end.current?.scrollIntoView({ block: "nearest" });
+    if (!open || !body.current) return;
+    body.current.scrollTo({
+      top: body.current.scrollHeight,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+    });
   }, [messages, open]);
+  useEffect(() => {
+    if (!open) return;
+    panel.current?.querySelector("button")?.focus({ preventScroll: true });
+    function escape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+        launcher.current?.focus({ preventScroll: true });
+      }
+    }
+    window.addEventListener("keydown", escape);
+    return () => window.removeEventListener("keydown", escape);
+  }, [open]);
   function reply(text: string) {
-    const query = text.toLowerCase();
-    let answer =
-      "Saya bisa membantu informasi menu, jam buka, reservasi, dan cara memesan. Ini bantuan otomatis berbasis informasi demo, bukan chat dengan staf.";
-    if (/reserv|meja/.test(query))
-      answer =
-        "Buka halaman Reservasi, pilih tanggal, jam, jumlah tamu, dan area. Pengajuan demo tersimpan di browser; ketersediaan nyata harus dikonfirmasi staf.";
-    else if (/jam|buka|tutup/.test(query))
-      answer =
-        "Jam yang ditampilkan: " +
-        state.settings.hours +
-        " setiap hari. Jadwal ini masih contoh dan perlu konfirmasi restoran.";
-    else if (/menu|rekomend|makan/.test(query))
-      answer =
-        "Coba " +
-        dishes
-          .filter((dish) => dish.favorite)
-          .slice(0, 3)
-          .map((dish) => dish.name)
-          .join(", ") +
-        ". Semua bisa dilihat di halaman Menu.";
-    else if (/pesan|bayar|qris/.test(query))
-      answer =
-        "Pilih menu dan varian, tambahkan ke keranjang, lalu isi rincian pesanan. Pembayaran pada prototipe hanya pilihan metode; tidak ada pembayaran yang diproses.";
-    else if (/lokasi|alamat/.test(query))
-      answer =
-        state.settings.address +
-        ". Alamat dan kontak resmi dapat diatur melalui panel demo.";
+    const previous = messages
+      .filter((message) => message.role === "assistant")
+      .at(-1);
+    const answer = restaurantReply(text, state, previous);
     setMessages((current) => [
       ...current,
       { role: "user", text },
-      { role: "assistant", text: answer },
+      { role: "assistant", ...answer },
     ]);
     setQuestion("");
   }
   return (
     <div className="chat-widget">
-      {open && (
-        <section className="chat-panel" aria-label="Bantuan restoran">
-          <div className="chat-heading">
+      <section
+        ref={panel}
+        className={"chat-panel" + (open ? " is-open" : "")}
+        aria-label="Bantuan restoran"
+        aria-hidden={!open}
+        inert={!open}
+      >
+        <div className="chat-heading">
+          <div>
             <span>
               <Icon name="chat" /> Teman Saji
             </span>
-            <button
-              className="icon-button"
-              onClick={() => setOpen(false)}
-              aria-label="Tutup bantuan"
-            >
-              <Icon name="close" />
-            </button>
+            <small>Asisten otomatis · menu demo</small>
           </div>
-          <div className="chat-body" role="log" aria-live="polite">
-            <p className="chat-message">
-              Halo! Mau cari menu atau merencanakan makan bersama? Pilih topik
-              di bawah atau ketik pertanyaan.
-            </p>
-            {messages.map((message, index) => (
+          <button
+            className="icon-button"
+            onClick={close}
+            aria-label="Tutup bantuan"
+          >
+            <Icon name="close" />
+          </button>
+        </div>
+        <div
+          ref={body}
+          className="chat-body"
+          role="log"
+          aria-live="polite"
+          aria-relevant="additions"
+        >
+          <p className="chat-message">
+            Hai, selamat datang! Aku Teman Saji. Lagi ingin makan apa? Boleh
+            cerita selera atau kisaran harganya, nanti aku bantu pilihkan.
+          </p>
+          {messages.map((message, index) => (
+            <div className="chat-entry" key={index}>
               <p
                 className={
                   "chat-message " + (message.role === "user" ? "chat-user" : "")
                 }
-                key={index}
               >
                 {message.text}
               </p>
-            ))}
-            <div ref={end} />
-          </div>
-          <div className="chat-topics">
-            {["Rekomendasi menu", "Reservasi meja", "Jam buka"].map((topic) => (
-              <button key={topic} onClick={() => reply(topic)}>
-                {topic}
-              </button>
-            ))}
-          </div>
-          <form
-            className="chat-input"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (question.trim()) reply(question.trim());
-            }}
-          >
-            <label className="sr-only" htmlFor="chat-question">
-              Pertanyaan Anda
-            </label>
-            <input
-              id="chat-question"
-              value={question}
-              onChange={(event) => setQuestion(event.target.value)}
-              placeholder="Tulis pertanyaan..."
-              maxLength={300}
-            />
-            <button
-              className="icon-button"
-              aria-label="Kirim pertanyaan"
-              disabled={!question.trim()}
-            >
-              <Icon name="arrow" />
+              {message.actions && (
+                <div className="chat-reply-actions">
+                  {message.actions.map((action) => (
+                    <Link key={action.href} href={action.href} onClick={close}>
+                      {action.label}
+                      <Icon name="arrow" />
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="chat-topics">
+          {["Rekomendasi menu", "Reservasi meja", "Jam buka"].map((topic) => (
+            <button key={topic} onClick={() => reply(topic)}>
+              {topic}
             </button>
-          </form>
-        </section>
-      )}
+          ))}
+        </div>
+        <form
+          className="chat-input"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (question.trim()) reply(question.trim());
+          }}
+        >
+          <label className="sr-only" htmlFor="chat-question">
+            Pertanyaan Anda
+          </label>
+          <input
+            id="chat-question"
+            value={question}
+            onChange={(event) => setQuestion(event.target.value)}
+            placeholder="Tulis pertanyaan..."
+            maxLength={300}
+          />
+          <button
+            className="icon-button"
+            aria-label="Kirim pertanyaan"
+            disabled={!question.trim()}
+          >
+            <Icon name="arrow" />
+          </button>
+        </form>
+      </section>
       <button
         className="chat-launcher"
-        onClick={() => setOpen(!open)}
+        ref={launcher}
+        onClick={() => (open ? close() : setOpen(true))}
         aria-expanded={open}
         aria-label={open ? "Tutup bantuan" : "Buka bantuan restoran"}
       >

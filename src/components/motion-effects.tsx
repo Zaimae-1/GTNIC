@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 const revealSelector =
-  ".section-heading, .menu-card, .story-photo, .story-copy, .occasion-card, .visit-info, .form-section, .record-card";
+  ".section-heading, .menu-card, .story-photo, .story-copy, .occasion-card, .visit-info, .form-section";
 
 export function MotionEffects() {
   const pathname = usePathname();
@@ -26,16 +26,16 @@ export function MotionEffects() {
           const siblings = Array.from(
             entry.target.parentElement?.children ?? [],
           );
-          const delay = Math.min(siblings.indexOf(entry.target) % 3, 2) * 65;
+          const delay = Math.max(0, siblings.indexOf(entry.target) % 3) * 35;
           const animation = entry.target.animate(
             [
-              { opacity: 0, translate: "0 16px" },
+              { opacity: 0.82, translate: "0 6px" },
               { opacity: 1, translate: "0 0" },
             ],
             {
-              duration: 580,
+              duration: 640,
               delay,
-              easing: "cubic-bezier(.22, 1, .36, 1)",
+              easing: "cubic-bezier(.25, .65, .3, 1)",
               fill: "backwards",
             },
           );
@@ -44,7 +44,7 @@ export function MotionEffects() {
             running.delete(animation);
         }
       },
-      { threshold: 0.08, rootMargin: "0px 0px -20px 0px" },
+      { threshold: 0, rootMargin: "0px 0px 40px 0px" },
     );
 
     function observe(root: Element) {
@@ -55,6 +55,8 @@ export function MotionEffects() {
       for (const target of targets) {
         if (seen.has(target)) continue;
         seen.add(target);
+        // Already-visible content stays in place instead of flashing after hydration.
+        if (target.getBoundingClientRect().top < window.innerHeight) continue;
         observer.observe(target);
       }
     }
