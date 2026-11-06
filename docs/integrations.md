@@ -18,7 +18,7 @@ Tujuan produk kini website restoran pelanggan. Jangan menggabungkan halaman logi
 3. OTP WhatsApp: penyedia resmi, verifikasi server, batas permintaan, penanganan kedaluwarsa kode. Jangan mensimulasikan OTP sebagai autentikasi sungguhan.
 4. Pembayaran: penyedia pembayaran, webhook, status pembayaran server, idempotensi. Jangan menandai lunas berdasarkan tombol pelanggan.
 5. Reservasi: aturan kapasitas dan durasi yang disepakati serta transaksi database untuk mencegah dua pengajuan memakai meja yang sama.
-6. Chat: saat ini berbasis topik. Hubungkan model atau staf hanya jika penyedia dan informasi restoran sudah disepakati.
+6. Chat: Gemini kini tersambung melalui route server /api/chat; key berada di GEMINI_API_KEY. Bantuan dasar lokal tetap tersedia atas pilihan pengguna ketika layanan gagal. AI hanya memberi informasi, tidak menjalankan transaksi atau mengakses data akun. Untuk produksi, tambahkan pembatas kuota terdistribusi serta autentikasi/aturan akses sesuai kebutuhan. Konten restoran masih data contoh.
 7. Konten: konfirmasi nama merek, kontak, lokasi, harga, pajak, jam, foto final, dan kapasitas meja.
 
 Status admin lokal menghitung laporan hanya dari order Selesai, tetapi status tersebut tidak membuktikan adanya pembayaran. Data demo dan perubahan tab browser dapat diperiksa tanpa layanan eksternal.

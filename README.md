@@ -12,7 +12,7 @@ Gunakan Node.js yang kompatibel dengan Next.js 16, lalu:
 
 Pemeriksaan: npm run lint, npm run typecheck, dan npm run build. Untuk menjalankan build produksi: npm run start setelah build berhasil.
 
-Tidak ada variabel lingkungan yang diperlukan untuk mencoba prototipe. Modul Supabase lama tetap tersedia di src/lib/supabase sebagai titik integrasi berikutnya, tetapi belum digunakan oleh aplikasi restoran.
+Halaman restoran dapat dicoba tanpa variabel lingkungan. Untuk chat Gemini, salin .env.example menjadi .env.local lalu isi GEMINI_API_KEY. GEMINI_MODEL opsional (default gemini-3.5-flash-lite). Restart server setelah mengubah konfigurasi. Jangan gunakan awalan NEXT_PUBLIC_ untuk key Gemini. Modul Supabase lama tetap tersedia, tetapi belum digunakan oleh aplikasi restoran.
 
 ## Halaman dan fungsi
 
@@ -25,7 +25,15 @@ Tidak ada variabel lingkungan yang diperlukan untuk mencoba prototipe. Modul Sup
 - /akun: pesanan dan reservasi perangkat ini; batalkan pengajuan yang belum dikonfirmasi.
 - /login: rancangan masuk WhatsApp; pengiriman OTP belum aktif. /register diarahkan ke halaman ini.
 - /admin: **panel demo lokal terbuka**, ringkasan, pengelolaan status pesanan/reservasi, ketersediaan menu, meja, laporan dan pengaturan kontak restoran.
-- Bantuan percakapan memakai bahasa santai, konteks pertanyaan lanjutan, pilihan berdasarkan harga, dan tautan menu. Jawaban diproses lokal berdasarkan data contoh; belum memakai model AI atau chat staf.
+- Chat pelanggan terhubung ke Gemini melalui POST /api/chat di server. Mendukung konteks pertanyaan lanjutan dan tautan menu. Saat layanan gagal, pengguna dapat mencoba lagi atau memilih bantuan dasar lokal yang ditandai jelas.
+
+## Chat Gemini
+
+API key hanya dibaca server dan dikirim ke Google melalui header, bukan ke browser. Konteks model berasal dari menu contoh di kode dan ID menu yang tidak tersedia pada browser. Riwayat yang dikirim dibatasi delapan pesan terakhir; data order/reservasi, nomor pelanggan, dan seluruh penyimpanan browser tidak dikirim. Teks yang diketik ke chat tetap dikirim ke Google, jadi jangan masukkan kredensial atau data pribadi.
+
+Permintaan dibatasi panjangnya, diberi timeout, dan memiliki pembatas sederhana 10 permintaan per menit per alamat jaringan dalam satu proses. Pembatas ini tidak terdistribusi dan tidak menggantikan autentikasi atau layanan pembatas kuota untuk produksi. Daftar tautan jawaban diperiksa kembali di server. AI tidak dapat membuat order, memproses pembayaran, atau mengonfirmasi meja.
+
+Jalankan npm run test:chat untuk pemeriksaan route tanpa memakai API key atau melakukan panggilan berbayar. Di hosting nanti, masukkan GEMINI_API_KEY dan GEMINI_MODEL melalui environment variables penyedia hosting; .env.local tidak ikut Git.
 
 ## Batas prototipe
 

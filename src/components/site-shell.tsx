@@ -196,9 +196,14 @@ function RestaurantChat() {
   const state = useRestaurant();
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<(ChatReply & { role: string })[]>(
-    [],
-  );
+  const [messages, setMessages] = useState<
+    (ChatReply & { role: "user" | "assistant"; source?: "gemini" | "local" })[]
+  >([]);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const requestLock = useRef(false);
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => () => controller.current?.abort(), []);
   const body = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLElement>(null);
   const launcher = useRef<HTMLButtonElement>(null);
@@ -214,7 +219,7 @@ function RestaurantChat() {
         ? "instant"
         : "smooth",
     });
-  }, [messages, open]);
+  }, [messages, open, pending, error]);
   useEffect(() => {
     if (!open) return;
     panel.current?.querySelector("button")?.focus({ preventScroll: true });
@@ -227,17 +232,88 @@ function RestaurantChat() {
     window.addEventListener("keydown", escape);
     return () => window.removeEventListener("keydown", escape);
   }, [open]);
-  function reply(text: string) {
+  function basicReply() {
+    const text = messages
+      .filter((message) => message.role === "user")
+      .at(-1)?.text;
+    if (!text) return;
     const previous = messages
       .filter((message) => message.role === "assistant")
       .at(-1);
     const answer = restaurantReply(text, state, previous);
     setMessages((current) => [
       ...current,
-      { role: "user", text },
-      { role: "assistant", ...answer },
+      { role: "assistant", source: "local", ...answer },
     ]);
-    setQuestion("");
+    setError("");
+  }
+  async function reply(text: string, retry = false) {
+    if (requestLock.current || !text.trim()) return;
+    requestLock.current = true;
+    setPending(true);
+    setError("");
+    const next = retry
+      ? messages
+      : [
+          ...messages,
+          { role: "user" as const, text: text.trim().slice(0, 500) },
+        ];
+    if (!retry) {
+      setMessages(next);
+      setQuestion("");
+    }
+    const history = next
+      .slice(-8)
+      .map((message) => ({
+        role: message.role,
+        text: message.text.slice(0, message.role === "user" ? 500 : 900),
+      }));
+    while (history[0]?.role === "assistant") history.shift();
+    const abort = new AbortController();
+    controller.current = abort;
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: history,
+          unavailable: state.unavailable,
+        }),
+        signal: AbortSignal.any([abort.signal, AbortSignal.timeout(28000)]),
+      });
+      const data = (await response.json()) as {
+        reply?: ChatReply;
+        source?: string;
+        error?: { message?: string };
+      };
+      if (
+        !response.ok ||
+        data.source !== "gemini" ||
+        !data.reply ||
+        typeof data.reply.text !== "string"
+      ) {
+        setError(
+          data.error?.message || "Jawabannya belum terbaca. Coba lagi ya.",
+        );
+        return;
+      }
+      const answer = data.reply;
+      setMessages((current) => [
+        ...current,
+        { role: "assistant", source: "gemini", ...answer },
+      ]);
+    } catch (error) {
+      if (!abort.signal.aborted)
+        setError(
+          error instanceof Error && error.name === "TimeoutError"
+            ? "Jawabannya agak lama. Coba lagi sebentar ya."
+            : "Koneksi chat sedang terganggu. Coba lagi atau pakai bantuan dasar dulu ya.",
+        );
+    } finally {
+      requestLock.current = false;
+      if (!abort.signal.aborted) setPending(false);
+      controller.current = null;
+    }
   }
   return (
     <div className="chat-widget">
@@ -253,7 +329,7 @@ function RestaurantChat() {
             <span>
               <Icon name="chat" /> Teman Saji
             </span>
-            <small>Asisten otomatis · menu demo</small>
+            <small>Asisten Gemini · menu demo</small>
           </div>
           <button
             className="icon-button"
@@ -283,6 +359,13 @@ function RestaurantChat() {
               >
                 {message.text}
               </p>
+              {message.source && (
+                <span className="chat-source">
+                  {message.source === "gemini"
+                    ? "Gemini"
+                    : "Bantuan dasar · diproses lokal"}
+                </span>
+              )}
               {message.actions && (
                 <div className="chat-reply-actions">
                   {message.actions.map((action) => (
@@ -295,10 +378,41 @@ function RestaurantChat() {
               )}
             </div>
           ))}
+          {pending && (
+            <p className="chat-loading" role="status">
+              Aku cek dulu ya…
+            </p>
+          )}
         </div>
+        {error && (
+          <div className="chat-service-error">
+            <p role="alert">{error}</p>
+            <div>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => {
+                  const text = messages
+                    .filter((message) => message.role === "user")
+                    .at(-1)?.text;
+                  if (text) void reply(text, true);
+                }}
+              >
+                Coba lagi
+              </button>
+              <button type="button" disabled={pending} onClick={basicReply}>
+                Pakai bantuan dasar
+              </button>
+            </div>
+          </div>
+        )}
         <div className="chat-topics">
           {["Rekomendasi menu", "Reservasi meja", "Jam buka"].map((topic) => (
-            <button key={topic} onClick={() => reply(topic)}>
+            <button
+              key={topic}
+              disabled={pending}
+              onClick={() => void reply(topic)}
+            >
               {topic}
             </button>
           ))}
@@ -307,7 +421,7 @@ function RestaurantChat() {
           className="chat-input"
           onSubmit={(event) => {
             event.preventDefault();
-            if (question.trim()) reply(question.trim());
+            if (question.trim()) void reply(question.trim());
           }}
         >
           <label className="sr-only" htmlFor="chat-question">
@@ -318,12 +432,12 @@ function RestaurantChat() {
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             placeholder="Tulis pertanyaan..."
-            maxLength={300}
+            maxLength={500}
           />
           <button
             className="icon-button"
             aria-label="Kirim pertanyaan"
-            disabled={!question.trim()}
+            disabled={pending || !question.trim()}
           >
             <Icon name="arrow" />
           </button>

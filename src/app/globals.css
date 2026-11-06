@@ -2928,6 +2928,45 @@ textarea:focus-visible {
 .chat-entry {
   margin-bottom: 12px;
 }
+.chat-message {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.chat-source {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--muted);
+  padding: 0 4px 6px;
+}
+.chat-loading {
+  color: var(--muted);
+  font-size: 0.89rem;
+  padding: 6px 4px;
+  margin: 0;
+}
+.chat-service-error {
+  padding: 12px 15px;
+  background: #fcf0e8;
+  border-top: 1px solid #e5c7b4;
+  font-size: 0.83rem;
+}
+.chat-service-error p {
+  margin: 0 0 8px;
+}
+.chat-service-error > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chat-service-error button {
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid #bd9983;
+  border-radius: 5px;
+  background: #fffefa;
+  color: var(--navy);
+  font: inherit;
+}
 .chat-entry .chat-message {
   margin-bottom: 6px;
 }
