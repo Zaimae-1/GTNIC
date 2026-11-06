@@ -2773,6 +2773,228 @@ th {
     justify-content: center;
   }
 }
+/* Gerakan singkat, tanpa animasi berulang atau konten tersembunyi. */
+:root {
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+.button,
+.round-button,
+.icon-button,
+.chat-launcher,
+.category-tabs button,
+.admin-tabs button,
+.table-map > button,
+.area-card,
+.choice,
+.cart-link,
+.account-link {
+  transition:
+    background-color 220ms ease,
+    color 220ms ease,
+    border-color 220ms ease,
+    box-shadow 280ms ease,
+    transform 320ms var(--ease-soft);
+}
+.button .icon,
+.text-link .icon,
+.round-button > span,
+.occasion-arrow,
+.hero-image-note .icon,
+.quick-actions .icon {
+  transition: transform 320ms var(--ease-soft);
+}
+.menu-card {
+  transition:
+    transform 360ms var(--ease-soft),
+    box-shadow 360ms ease,
+    border-color 260ms ease;
+}
+.menu-card-photo .photo,
+.occasion-card > .photo,
+.area-card > .photo img {
+  transition: transform 700ms var(--ease-soft);
+}
+.desktop-nav a {
+  position: relative;
+  transition: color 220ms ease;
+}
+.desktop-nav a::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--copper);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 300ms var(--ease-soft);
+}
+.desktop-nav a:hover,
+.desktop-nav a[aria-current="page"] {
+  border-bottom-color: transparent;
+}
+.desktop-nav a[aria-current="page"]::after,
+.desktop-nav a:focus-visible::after {
+  transform: scaleX(1);
+}
+.text-link,
+.text-button,
+.back-link,
+.footer-grid a {
+  transition:
+    color 220ms ease,
+    text-decoration-color 220ms ease;
+}
+input,
+select,
+textarea {
+  transition:
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    background-color 220ms ease;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: var(--navy);
+  box-shadow: 0 0 0 4px #1838490c;
+}
+.menu-card:focus-within,
+.area-card:focus-visible {
+  border-color: #9bafb8;
+  box-shadow: 0 10px 28px #1838490d;
+}
+.hero-copy {
+  animation: soft-arrive 700ms var(--ease-soft) both;
+}
+.hero-composition {
+  animation: soft-arrive 850ms 90ms var(--ease-soft) both;
+}
+.page-heading {
+  animation: soft-arrive 550ms var(--ease-soft) both;
+}
+.mobile-menu {
+  transform-origin: top;
+  animation: panel-arrive 240ms var(--ease-soft) both;
+}
+.chat-panel {
+  transform-origin: bottom right;
+  animation: panel-arrive 260ms var(--ease-soft) both;
+}
+.cart-count {
+  animation: count-arrive 280ms var(--ease-soft);
+}
+.feedback:not(:empty),
+.form-error {
+  animation: feedback-arrive 220ms ease both;
+}
+@keyframes soft-arrive {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes panel-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(7px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes count-arrive {
+  from {
+    transform: scale(0.8);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes feedback-arrive {
+  from {
+    opacity: 0.3;
+    translate: 0 3px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .button:not(:disabled):hover,
+  .chat-launcher:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 18px #18384920;
+  }
+  .button:not(:disabled):hover .icon,
+  .text-link:hover .icon,
+  .hero-image-note a:hover .icon,
+  .quick-actions a:hover .icon {
+    transform: translateX(4px);
+  }
+  .button:not(:disabled):active,
+  .round-button:active,
+  .chat-launcher:active {
+    transform: translateY(0) scale(0.98);
+  }
+  .menu-card:hover {
+    transform: translateY(-5px);
+    border-color: #b8c5c8;
+    box-shadow: 0 18px 35px #18384914;
+  }
+  .menu-card:hover .menu-card-photo .photo {
+    transform: scale(1.045);
+  }
+  .round-button:hover {
+    transform: scale(1.07);
+  }
+  .round-button:hover > span {
+    transform: rotate(90deg);
+  }
+  .icon-button:hover,
+  .cart-link:hover,
+  .account-link:hover {
+    transform: translateY(-2px);
+  }
+  .desktop-nav a:hover::after {
+    transform: scaleX(1);
+  }
+  .occasion-card:hover > .photo {
+    transform: scale(1.035);
+  }
+  .occasion-card:hover .occasion-arrow {
+    transform: translateX(4px);
+  }
+  .area-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 9px 20px #18384910;
+  }
+  .area-card:hover > .photo img {
+    transform: scale(1.04);
+  }
+  .category-tabs button:hover,
+  .admin-tabs button:hover,
+  .table-map > button:not(:disabled):hover {
+    transform: translateY(-2px);
+  }
+  .table-map > button:not(:disabled):hover,
+  .choice:hover {
+    border-color: var(--navy);
+    box-shadow: 0 4px 12px #1838490b;
+  }
+  input:hover,
+  select:hover,
+  textarea:hover {
+    border-color: #8c9fa7;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -2781,6 +3003,7 @@ th {
   *:before,
   *:after {
     transition: none !important;
+    animation: none !important;
   }
 }
 @media print {

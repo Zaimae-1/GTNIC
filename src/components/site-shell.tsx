@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { Brand, Icon } from "./ui";
 import { useRestaurant } from "@/lib/restaurant-store";
 import { dishes } from "@/lib/restaurant";
+import { MotionEffects } from "./motion-effects";
 
 const links = [
   { href: "/", label: "Beranda" },
@@ -66,7 +67,9 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               aria-label={"Keranjang, " + total + " item"}
             >
               <Icon name="bag" />
-              <span className="cart-count">{total}</span>
+              <span className="cart-count" key={total}>
+                {total}
+              </span>
             </Link>
             <Link
               href="/akun"
@@ -114,6 +117,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       <main id="main" tabIndex={-1}>
         {children}
       </main>
+      <MotionEffects />
       <footer className="site-footer">
         <div className="container footer-grid">
           <div>
