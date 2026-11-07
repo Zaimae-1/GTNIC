@@ -326,9 +326,10 @@ summary:focus-visible {
   display: grid;
   place-items: center;
 }
-.brand-symbol .icon {
-  width: 27px;
-  height: 27px;
+.brand-symbol img {
+  display: block;
+  width: calc(100% - 4px);
+  height: auto;
 }
 .desktop-nav {
   display: flex;
@@ -458,11 +459,11 @@ summary:focus-visible {
   font-weight: 700;
   line-height: 1.3;
 }
-.hero-stamp span {
-  font-size: 2.7rem;
-  line-height: 1.3;
-  font-family: Georgia;
-  color: var(--copper);
+.hero-stamp img {
+  display: block;
+  width: 54%;
+  height: auto;
+  flex: none;
 }
 .hero-stamp small {
   display: block;

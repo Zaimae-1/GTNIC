@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import leafMark from "@/app/icon.svg";
 import { type Dish, money } from "@/lib/restaurant";
 
 export function Icon({
@@ -107,11 +108,15 @@ export function Photo({
     </div>
   );
 }
+export function LeafMark() {
+  return <Image src={leafMark} alt="" unoptimized />;
+}
+
 export function Brand() {
   return (
     <Link className="brand" href="/" aria-label="Saji Rasa, beranda">
       <span className="brand-symbol">
-        <Icon name="leaf" />
+        <LeafMark />
       </span>
       <span>
         SAJI RASA<small>MEJA KITA BERSAMA</small>

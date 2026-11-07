@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ButtonLink,
   Icon,
+  LeafMark,
   MenuCard,
   Photo,
   SectionTitle,
@@ -51,7 +52,7 @@ export default function Home() {
           </div>
           <div className="hero-stamp">
             <small>RASA LOKAL</small>
-            <span aria-hidden="true">✳</span>
+            <LeafMark />
             <small>SEPENUH HATI</small>
           </div>
           <div className="hero-image-note">
