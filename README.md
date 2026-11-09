@@ -12,7 +12,9 @@ Gunakan Node.js yang kompatibel dengan Next.js 16, lalu:
 
 Pemeriksaan: npm run lint, npm run typecheck, dan npm run build. Untuk menjalankan build produksi: npm run start setelah build berhasil.
 
-Halaman restoran dapat dicoba tanpa variabel lingkungan. Untuk chat Gemini, salin .env.example menjadi .env.local lalu isi GEMINI_API_KEY. GEMINI_MODEL opsional (default gemini-3.5-flash-lite). Restart server setelah mengubah konfigurasi. Jangan gunakan awalan NEXT_PUBLIC_ untuk key Gemini. Modul Supabase lama tetap tersedia, tetapi belum digunakan oleh aplikasi restoran.
+Halaman restoran dapat dicoba tanpa variabel lingkungan. Untuk chat Gemini, salin .env.example menjadi .env.local lalu isi GEMINI_API_KEY. GEMINI_MODEL opsional (default gemini-3.5-flash-lite). Restart server setelah mengubah konfigurasi. Jangan gunakan awalan NEXT_PUBLIC_ untuk key Gemini.
+
+Untuk reservasi terpusat, jalankan kedua migrasi di `supabase/migrations` secara berurutan, lalu isi `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` di lingkungan build. Buat pengguna terkonfirmasi di Supabase Auth dan tambahkan UUID pengguna itu ke `public.saji_reservation_staff`. Staf masuk di `/admin/login`. Tanpa konfigurasi Supabase, reservasi berjalan sebagai simulasi lokal.
 
 ## Halaman dan fungsi
 
@@ -24,7 +26,7 @@ Halaman restoran dapat dicoba tanpa variabel lingkungan. Untuk chat Gemini, sali
 - /reservasi: data pengunjung, jadwal, area, denah meja ilustrasi, tinjau dan simpan pengajuan.
 - /akun: pesanan dan reservasi perangkat ini; batalkan pengajuan yang belum dikonfirmasi.
 - /login: rancangan masuk WhatsApp; pengiriman OTP belum aktif. /register diarahkan ke halaman ini.
-- /admin: **panel demo lokal terbuka**, ringkasan, pengelolaan status pesanan/reservasi, ketersediaan menu, meja, laporan dan pengaturan kontak restoran.
+- /admin: panel demo untuk pesanan, menu, meja, laporan dan pengaturan lokal. Staf yang sudah masuk dapat membaca dan memperbarui reservasi Supabase.
 - Chat pelanggan terhubung ke Gemini melalui POST /api/chat di server. Mendukung konteks pertanyaan lanjutan dan tautan menu. Saat layanan gagal, pengguna dapat mencoba lagi atau memilih bantuan dasar lokal yang ditandai jelas.
 
 ## Chat Gemini
@@ -37,14 +39,14 @@ Jalankan npm run test:chat untuk pemeriksaan route tanpa memakai API key atau me
 
 ## Batas prototipe
 
-Data disimpan di localStorage dengan key sajirasa-demo-v1. Data tidak tersinkron antarperangkat dan dapat hilang jika penyimpanan browser dibersihkan. Panel staf melihat data yang dibuat pada browser/origin yang sama. Ini bukan autentikasi atau penyimpanan server.
+Pengajuan reservasi baru tersimpan di Supabase jika dikonfigurasi. Staf dapat mengelolanya dari perangkat lain. Pelanggan melihat status melalui riwayat di browser yang dipakai saat mengirim pengajuan. Pesanan, pengaturan demo, dan pengajuan lama dari mode lokal tetap di `localStorage`.
 
 Pembayaran tidak diproses; metode hanya dicatat. Pesanan tidak dikirim ke dapur nyata dan pengajuan reservasi tidak menjamin meja nyata. Menu, harga, jam buka, area, dan alamat adalah data contoh. Kontak WhatsApp kosong secara default; dapat diisi melalui pengaturan demo, lalu tautan WhatsApp dan pencarian alamat pada footer menjadi tersedia.
 
-Untuk mencoba: pilih menu → atur varian → tambah ke keranjang → lengkapi checkout → buka /admin dan ubah status → periksa /akun. Reservasi dapat ditinjau dan dikonfirmasi melalui panel yang sama. Tidak ada data yang dikirim ke situs referensi.
+Untuk mencoba pesanan, pilih menu, lengkapi checkout, ubah status di `/admin`, lalu periksa `/akun` pada browser yang sama. Untuk mencoba reservasi, kirim pengajuan melalui `/reservasi`, masuk sebagai staf di `/admin/login`, lalu pilih tab Reservasi di panel.
 
 ## Integrasi berikutnya
 
-Lihat docs/integrations.md. Jangan gunakan panel demo terbuka untuk data pelanggan nyata. Terapkan autentikasi staf, otorisasi server, database, dan validasi harga/ketersediaan pada server sebelum penggunaan operasional.
+Lihat `docs/integrations.md`. Gunakan data contoh pada prototipe ini. Penerapan operasional masih memerlukan integrasi pesanan, pembayaran, dan konfigurasi restoran nyata.
 
 Versi DapurCerdas terdahulu ada pada tag lokal backup/dapurcerdas-20261104 dan riwayat Git.

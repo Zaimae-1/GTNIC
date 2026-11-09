@@ -27,6 +27,7 @@ export type Order = {
 };
 export type Reservation = {
   id: string;
+  trackingToken?: string;
   name: string;
   phone: string;
   date: string;

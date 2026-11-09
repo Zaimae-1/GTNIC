@@ -1,8 +1,11 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { dishes, money } from "@/lib/restaurant";
-import { updateRestaurant, useRestaurant } from "@/lib/restaurant-store";
+import { type Reservation, updateRestaurant, useRestaurant } from "@/lib/restaurant-store";
+import { createClient } from "@/lib/supabase/client";
+import { hasSupabaseConfig } from "@/lib/supabase/env";
+import { getStaffReservations, reservationStatuses, updateStaffReservation } from "@/lib/supabase/reservations";
 import { Icon, Notice, PageTitle, Photo } from "./ui";
 const tabs = [
   "Ringkasan",
@@ -18,6 +21,53 @@ export function AdminPanel() {
   const [tab, setTab] = useState("Ringkasan");
   const [message, setMessage] = useState("");
   const [filter, setFilter] = useState("Semua");
+  const [staffReservations, setStaffReservations] = useState<Reservation[] | null>();
+  const [reservationError, setReservationError] = useState("");
+  const [reservationReload, setReservationReload] = useState(0);
+  const [savingReservation, setSavingReservation] = useState(false);
+  const reservations = hasSupabaseConfig ? staffReservations ?? [] : state.reservations;
+  useEffect(() => {
+    if (!hasSupabaseConfig) return;
+    let active = true;
+    void getStaffReservations().then((items) => {
+      if (!active) return;
+      setReservationError("");
+      setStaffReservations(items);
+    }).catch((error: Error) => {
+      if (!active) return;
+      setReservationError(error.message);
+      setStaffReservations(undefined);
+    });
+    return () => { active = false; };
+  }, [reservationReload]);
+
+  async function changeReservationStatus(id: string, status: string) {
+    if (!hasSupabaseConfig) {
+      update((current) => ({
+        ...current,
+        reservations: current.reservations.map((item) => item.id === id ? { ...item, status } : item),
+      }));
+      return;
+    }
+    setSavingReservation(true);
+    try {
+      await updateStaffReservation(id, status);
+      setStaffReservations((items) => items?.map((item) => item.id === id ? { ...item, status } : item));
+      setMessage("Status reservasi tersimpan.");
+    } catch (error) {
+      setMessage((error as Error).message);
+    } finally {
+      setSavingReservation(false);
+    }
+  }
+
+  async function signOut() {
+    const { error } = await createClient().auth.signOut({ scope: "local" });
+    if (error) return setMessage("Belum bisa keluar. Coba lagi.");
+    setStaffReservations(null);
+    setReservationReload((value) => value + 1);
+    setMessage("Anda sudah keluar dari akun staf.");
+  }
   function update(fn: Parameters<typeof updateRestaurant>[0]) {
     try {
       updateRestaurant(fn);
@@ -33,15 +83,18 @@ export function AdminPanel() {
   return (
     <div className="container inner-page admin-page">
       <PageTitle
-        label="PANEL STAF · DEMO LOKAL"
+        label="PANEL STAF · DEMO"
         title="Dapur bergerak, meja terlayani."
         description="Simulasikan pengelolaan restoran dari satu tempat."
       />
       <Notice>
-        Panel ini terbuka khusus untuk demo dan bukan panel admin yang aman
-        untuk produksi. Semua data hanya pada browser ini. Autentikasi staf dan
-        database diperlukan sebelum digunakan oleh restoran.
+        {hasSupabaseConfig
+          ? "Masuk sebagai staf untuk mengelola reservasi. Pesanan, menu, dan pengaturan lainnya masih simulasi di browser ini."
+          : "Panel demo lokal. Data simulasi tersimpan di browser ini."}
       </Notice>
+      {hasSupabaseConfig && Array.isArray(staffReservations) && (
+        <button className="text-button" onClick={signOut}>Keluar dari akun staf</button>
+      )}
       <nav className="admin-tabs" aria-label="Menu panel staf">
         {tabs.map((item) => (
           <button
@@ -72,7 +125,7 @@ export function AdminPanel() {
               ["Penjualan selesai", money(revenue)],
               [
                 "Reservasi menunggu",
-                state.reservations.filter(
+                reservations.filter(
                   (item) => item.status === "Menunggu konfirmasi",
                 ).length,
               ],
@@ -115,8 +168,9 @@ export function AdminPanel() {
             <section className="panel">
               <h2>Mulai simulasi</h2>
               <p>
-                Data yang dibuat pelanggan akan muncul di sini pada browser yang
-                sama.
+                {hasSupabaseConfig
+                  ? "Reservasi pelanggan muncul setelah staf masuk. Pesanan demo muncul di browser yang sama."
+                  : "Data simulasi muncul di browser yang sama."}
               </p>
               <div className="quick-actions">
                 <Link href="/menu">
@@ -233,7 +287,16 @@ export function AdminPanel() {
       {tab === "Reservasi" && (
         <div className="record-list">
           <h2>Pengajuan reservasi</h2>
-          {state.reservations.map((reservation) => (
+          {hasSupabaseConfig && (
+            <div className="button-row">
+              {staffReservations === null && <Link className="button" href="/admin/login">Masuk sebagai staf</Link>}
+              {staffReservations === undefined && <p role="status">{reservationError || "Memuat reservasi…"}</p>}
+              {staffReservations !== null && (
+                <button className="text-button" onClick={() => setReservationReload((value) => value + 1)}>Muat ulang reservasi</button>
+              )}
+            </div>
+          )}
+          {reservations.map((reservation) => (
             <article className="panel" key={reservation.id}>
               <div className="record-heading">
                 <div>
@@ -259,31 +322,17 @@ export function AdminPanel() {
                 Status reservasi
                 <select
                   value={reservation.status}
-                  onChange={(event) =>
-                    update((current) => ({
-                      ...current,
-                      reservations: current.reservations.map((item) =>
-                        item.id === reservation.id
-                          ? { ...item, status: event.target.value }
-                          : item,
-                      ),
-                    }))
-                  }
+                  disabled={savingReservation}
+                  onChange={(event) => void changeReservationStatus(reservation.id, event.target.value)}
                 >
-                  {[
-                    "Menunggu konfirmasi",
-                    "Dikonfirmasi",
-                    "Selesai",
-                    "Ditolak",
-                    "Dibatalkan",
-                  ].map((item) => (
+                  {reservationStatuses.map((item) => (
                     <option key={item}>{item}</option>
                   ))}
                 </select>
               </label>
             </article>
           ))}
-          {!state.reservations.length && (
+          {(!hasSupabaseConfig || Array.isArray(staffReservations)) && !reservations.length && (
             <p className="panel">Belum ada pengajuan reservasi.</p>
           )}
         </div>

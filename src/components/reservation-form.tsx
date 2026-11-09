@@ -2,6 +2,8 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { areas, localDate } from "@/lib/restaurant";
+import { hasSupabaseConfig } from "@/lib/supabase/env";
+import { submitReservation } from "@/lib/supabase/reservations";
 import {
   makeId,
   type Reservation,
@@ -28,6 +30,8 @@ export function ReservationForm({
   const [draft, setDraft] = useState<Reservation | null>(null);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState("");
+  const [pending, setPending] = useState(false);
+  const [historyUnavailable, setHistoryUnavailable] = useState(false);
   const saving = useRef(false);
   const [contact, setContact] = useState({
     name: "",
@@ -39,7 +43,7 @@ export function ReservationForm({
   const unavailable = state.reservations
     .filter(
       (item) =>
-        item.date === date &&
+        !hasSupabaseConfig && item.date === date &&
         item.area === area &&
         item.status !== "Dibatalkan" &&
         item.status !== "Ditolak" &&
@@ -60,7 +64,7 @@ export function ReservationForm({
       setError("Isi nama dan nomor WhatsApp Indonesia yang valid.");
       return;
     }
-    if (!date || !time || new Date(date + "T" + time) <= new Date()) {
+    if (!date || !time || new Date(date + "T" + time + "+07:00") <= new Date()) {
       setError("Pilih tanggal dan jam kunjungan yang belum lewat.");
       return;
     }
@@ -76,6 +80,7 @@ export function ReservationForm({
     setError("");
     setDraft({
       id: makeId("RSV"),
+      trackingToken: hasSupabaseConfig ? crypto.randomUUID() : undefined,
       name,
       phone,
       date,
@@ -88,10 +93,26 @@ export function ReservationForm({
       status: "Menunggu konfirmasi",
     });
   }
-  function confirm() {
+  async function confirm() {
     if (!draft || saving.current) return;
     saving.current = true;
+    setPending(true);
+    setError("");
     try {
+      if (hasSupabaseConfig) {
+        const id = await submitReservation(draft);
+        try {
+          updateRestaurant((current) => ({
+            ...current,
+            reservations: [{ ...draft, id }, ...current.reservations.filter((item) => item.id !== id)],
+          }));
+        } catch {
+          setHistoryUnavailable(true);
+        }
+        setSaved(id);
+        setDraft(null);
+        return;
+      }
       updateRestaurant((current) => {
         const conflict =
           draft.table &&
@@ -117,8 +138,10 @@ export function ReservationForm({
       setSaved(draft.id);
       setDraft(null);
     } catch (err) {
-      saving.current = false;
       setError((err as Error).message);
+    } finally {
+      saving.current = false;
+      setPending(false);
     }
   }
   if (saved)
@@ -132,12 +155,14 @@ export function ReservationForm({
           <h1>Meja untuk cerita berikutnya.</h1>
           <p>
             Kode reservasi Anda <strong>{saved}</strong>. Status masih menunggu
-            konfirmasi demo. Pengajuan ini belum dikirim ke restoran.
+            konfirmasi {hasSupabaseConfig ? "staf demo" : "demo lokal"}.
           </p>
-          <ButtonLink href="/akun">Lihat reservasi saya</ButtonLink>
-          <button className="text-button" onClick={() => router.refresh()}>
+          {historyUnavailable ? <p>Simpan kode ini. Riwayat browser tidak tersedia.</p> : (
+            <ButtonLink href="/akun">Lihat reservasi saya</ButtonLink>
+          )}
+          {!hasSupabaseConfig && <button className="text-button" onClick={() => router.refresh()}>
             Data hanya tersimpan di browser ini
-          </button>
+          </button>}
         </div>
       </div>
     );
@@ -169,8 +194,9 @@ export function ReservationForm({
             ))}
           </dl>
           <Notice>
-            Ini pengajuan simulasi yang disimpan di perangkat. Reservasi nyata
-            memerlukan layanan backend dan konfirmasi staf.
+            {hasSupabaseConfig
+              ? "Pengajuan demo dikirim ke panel staf. Gunakan data contoh."
+              : "Ini pengajuan simulasi yang disimpan di perangkat."}
           </Notice>
           {error && (
             <p role="alert" className="form-error">
@@ -181,11 +207,12 @@ export function ReservationForm({
             <button
               className="button button-light"
               onClick={() => setDraft(null)}
+              disabled={pending}
             >
               Kembali mengedit
             </button>
-            <button className="button" onClick={confirm}>
-              Simpan reservasi demo <Icon name="check" />
+            <button className="button" onClick={confirm} disabled={pending}>
+              {pending ? "Menyimpan…" : "Simpan reservasi demo"} <Icon name="check" />
             </button>
           </div>
         </div>
@@ -339,8 +366,9 @@ export function ReservationForm({
                 Posisi meja <span className="muted">· opsional</span>
               </h3>
               <p className="muted">
-                Denah ilustrasi. Ketersediaan di bawah hanya berdasarkan
-                pengajuan pada browser ini.
+                {hasSupabaseConfig
+                  ? "Denah ilustrasi. Ketersediaan meja diperiksa saat pengajuan dikirim."
+                  : "Denah ilustrasi. Ketersediaan berdasarkan pengajuan pada browser ini."}
               </p>
               <div className="table-map">
                 {Array.from({ length: 8 }, (_, index) => {

@@ -1,16 +1,46 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { money } from "@/lib/restaurant";
 import { updateRestaurant, useRestaurant } from "@/lib/restaurant-store";
+import { hasSupabaseConfig } from "@/lib/supabase/env";
+import { getReservationStatus } from "@/lib/supabase/reservations";
 import { ButtonLink, EmptyState, Icon, Notice, PageTitle } from "./ui";
 export function AccountPage() {
   const state = useRestaurant();
   const [tab, setTab] = useState("Pesanan");
   const [message, setMessage] = useState("");
-  function cancelReservation(id: string) {
+  const [statuses, setStatuses] = useState<Record<string, string>>({});
+  const [cancelling, setCancelling] = useState<string | null>(null);
+  useEffect(() => {
+    if (tab !== "Reservasi" || !hasSupabaseConfig) return;
+    let active = true;
+    void Promise.allSettled(state.reservations.flatMap(({ id, trackingToken }) =>
+      trackingToken ? [getReservationStatus(trackingToken).then((status) => [id, status] as const)] : [],
+    )).then((results) => {
+      if (!active) return;
+      setStatuses((previous) => ({
+        ...previous,
+        ...Object.fromEntries(results.flatMap((result) => result.status === "fulfilled" ? [result.value] : [])),
+      }));
+      if (results.some((result) => result.status === "rejected")) {
+        setMessage("Sebagian status reservasi belum dapat dimuat.");
+      }
+    });
+    return () => { active = false; };
+  }, [state.reservations, tab]);
+
+  async function cancelReservation(id: string, trackingToken?: string) {
     if (!window.confirm("Batalkan pengajuan reservasi demo ini?")) return;
+    setCancelling(id);
+    setMessage("");
     try {
+      if (trackingToken) {
+        const status = await getReservationStatus(trackingToken, true);
+        setStatuses((previous) => ({ ...previous, [id]: status }));
+        if (status !== "Dibatalkan") setMessage("Reservasi ini sudah diproses oleh staf.");
+        return;
+      }
       updateRestaurant((current) => ({
         ...current,
         reservations: current.reservations.map((item) =>
@@ -19,6 +49,8 @@ export function AccountPage() {
       }));
     } catch (error) {
       setMessage((error as Error).message);
+    } finally {
+      setCancelling(null);
     }
   }
   return (
@@ -29,8 +61,8 @@ export function AccountPage() {
         description="Lihat pesanan dan reservasi yang dibuat melalui perangkat ini."
       />
       <Notice>
-        Mode tamu lokal. Data belum terhubung ke akun, WhatsApp, atau perangkat
-        lain. <Link href="/login">Tentang akses akun →</Link>
+        Riwayat tamu tersedia di browser ini. {hasSupabaseConfig && "Status reservasi diambil dari panel staf. "}
+        <Link href="/login">Tentang akses akun →</Link>
       </Notice>
       <div className="category-tabs">
         <button
@@ -99,7 +131,7 @@ export function AccountPage() {
                   <span className="record-code">{item.id}</span>
                   <h2>{item.name}</h2>
                 </div>
-                <span className="status-tag">{item.status}</span>
+                  <span className="status-tag">{statuses[item.id] ?? item.status}</span>
               </div>
               <p>
                 {item.date} · {item.time} · {item.guests} orang
@@ -111,10 +143,11 @@ export function AccountPage() {
               {item.note && <p className="muted">{item.note}</p>}
               <div className="record-bottom">
                 <span>{item.occasion}</span>
-                {item.status === "Menunggu konfirmasi" && (
+                {(statuses[item.id] ?? item.status) === "Menunggu konfirmasi" && (
                   <button
                     className="text-button danger"
-                    onClick={() => cancelReservation(item.id)}
+                    disabled={cancelling !== null}
+                    onClick={() => cancelReservation(item.id, item.trackingToken)}
                   >
                     Batalkan pengajuan
                   </button>

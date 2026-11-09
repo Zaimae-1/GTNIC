@@ -179,7 +179,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               Keluarga, teman lama, atau waktu untuk diri sendiri. Selalu ada
               tempat untuk Anda.
             </p>
-            <Link href="/admin">Panel staf · demo lokal →</Link>
+            <Link href="/admin">Panel staf · demo →</Link>
           </div>
         </div>
         <div className="container footer-bottom">
